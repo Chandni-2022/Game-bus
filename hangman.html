@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #282c34;
+            color: #61dafb;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #61dafb;
+        }
+
+        #instructions {
+            margin: 20px;
+            font-size: 18px;
+            color: #61dafb;
+            text-align: center;
+        }
+
+        #hangman-container {
+            display: inline-block;
+            margin: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #333;
+        }
+
+        #word {
+            font-size: 24px;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+        }
+
+        #hangman {
+            font-size: 60px;
+            text-align: center;
+            color: #61dafb;
+        }
+
+        #letters {
+            margin: 20px 0;
+        }
+
+        button {
+            margin: 0 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            background-color: #61dafb;
+            color: #282c34;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #4fa3c7; /* Darker blue on hover */
+        }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #61dafb;
+            text-align: center;
+        }
+
+        #next-level, #retry {
+            display: none;
+            margin-top: 20px;
+        }
+        #backBtn {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background-color: #88c005;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            #backBtn:hover {
+                background-color: #e9740e;
+            }
+    </style>
+</head>
+<body>
+        <button id="backBtn" onclick="window.location.href='index.html';">Back</button>
+    <h1>Hangman Game</h1>
+    <div id="instructions">
+        <p>Guess the word by suggesting letters!</p>
+        <p>You have <span id="remaining-attempts">6</span> attempts left.</p>
+    </div>
+    <div id="hangman-container">
+        <div id="hangman"></div>
+        <div id="word"></div>
+        <div id="letters"></div>
+    </div>
+    <div id="buttons"></div>
+    <div id="hint" style="margin: 20px; font-size: 18px; color: #61dafb;"></div>
+    <div id="message"></div>
+    <div id="next-level">
+        <button id="nextButton">Next Level</button>
+    </div>
+    <div id="retry">
+        <button id="retryButton">Retry</button>
+    </div>
+
+    <script>
+        const words = [
+            { word: "cat", hint: "A small domesticated feline." },
+            { word: "dog", hint: "A common domesticated canine." },
+            { word: "javascript", hint: "A programming language for web development." },
+            { word: "hangman", hint: "A word guessing game." },
+            { word: "coding", hint: "The process of writing instructions for a computer." },
+            { word: "programming", hint: "Creating software applications." },
+            { word: "developer", hint: "A person who creates software." },
+            { word: "artificial", hint: "Something made by humans." },
+            { word: "intelligence", hint: "The ability to acquire knowledge." },
+            { word: "exceptional", hint: "Unusual or extraordinary." }
+        ];
+
+        const maxAttempts = 6; // Base number of attempts
+        let attemptsLeft = maxAttempts;
+        let selectedWord = "";
+        let guessedLetters = [];
+        let wordDisplay = "";
+        let hintMessage = "";
+        let currentLevel = 0;
+
+        function startGame() {
+            // Randomly select a new word and hint
+            const selected = getRandomWord();
+            selectedWord = selected.word;
+            hintMessage = selected.hint;
+            guessedLetters = [];
+            wordDisplay = "_".repeat(selectedWord.length);
+            attemptsLeft = Math.max(maxAttempts, selectedWord.length + 2); // Adjust attempts based on word length
+            updateDisplay();
+            createLetterButtons();
+            document.getElementById("hint").textContent = `Hint: ${hintMessage}`;
+            document.getElementById("message").textContent = "";
+            document.getElementById("next-level").style.display = "none"; // Hide next level button
+            document.getElementById("retry").style.display = "none"; // Hide retry button
+        }
+
+        function getRandomWord() {
+            // Get a random word from the list
+            const randomIndex = Math.floor(Math.random() * words.length);
+            return words[randomIndex];
+        }
+
+        function createLetterButtons() {
+            const buttonsContainer = document.getElementById("buttons");
+            buttonsContainer.innerHTML = "";
+            for (let i = 97; i <= 122; i++) { // Letters a-z
+                const button = document.createElement("button");
+                button.textContent = String.fromCharCode(i);
+                button.addEventListener("click", () => guessLetter(button.textContent));
+                buttonsContainer.appendChild(button);
+            }
+        }
+
+        function guessLetter(letter) {
+            if (guessedLetters.includes(letter) || attemptsLeft <= 0) {
+                return;
+            }
+            guessedLetters.push(letter);
+            if (selectedWord.includes(letter)) {
+                updateWordDisplay(letter);
+            } else {
+                attemptsLeft--;
+                document.getElementById("message").textContent = `Incorrect guess! You have ${attemptsLeft} attempts left.`;
+                updateHangman();
+            }
+            updateDisplay();
+        }
+
+        function updateWordDisplay(letter) {
+            wordDisplay = [...selectedWord].map((char, index) => 
+                guessedLetters.includes(char) ? char : "_"
+            ).join("");
+        }
+
+        function updateDisplay() {
+            document.getElementById("word").textContent = wordDisplay;
+            document.getElementById("remaining-attempts").textContent = attemptsLeft;
+            document.getElementById("hangman").textContent = getHangmanImage();
+            if (wordDisplay === selectedWord) {
+                document.getElementById("message").textContent = "Congratulations! You guessed the word!";
+                document.getElementById("next-level").style.display = "block"; // Show next level button
+                disableButtons();
+            } else if (attemptsLeft <= 0) {
+                document.getElementById("message").textContent = `Game Over! The word was: "${selectedWord}".`;
+                document.getElementById("retry").style.display = "block"; // Show retry button
+                disableButtons();
+            }
+        }
+
+        function updateHangman() {
+            document.getElementById("hangman").textContent = getHangmanImage();
+        }
+
+        function getHangmanImage() {
+            const hangmanStages = [
+                "🟡", // 6 attempts
+                "🟡\n🟤", // 5 attempts
+                "🟡\n🟤\n🟤", // 4 attempts
+                "🟡\n🟤\n🟤\n🟤", // 3 attempts
+                "🟡\n🟤\n🟤\n🟤\n⚫️", // 2 attempts
+                "🟡\n🟤\n🟤\n🟤\n⚫️\n⚫️", // 1 attempt
+                "🟡\n🟤\n🟤\n🟤\n⚫️\n⚫️\n🏴‍☠️" // 0 attempts
+            ];
+            return hangmanStages[maxAttempts - attemptsLeft];
+        }
+
+        function disableButtons() {
+            const buttons = document.getElementById("buttons").querySelectorAll("button");
+            buttons.forEach(button => button.disabled = true);
+        }
+
+        document.getElementById("nextButton").addEventListener("click", () => {
+            startGame(); // Generate a new word for the next level
+        });
+
+        document.getElementById("retryButton").addEventListener("click", () => {
+            startGame(); // Generate a new word on retry
+        });
+
+        document.addEventListener("DOMContentLoaded", startGame);
+    </script>
+</body>
+</html>

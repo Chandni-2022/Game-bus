@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Enhanced</title>
+    <style>
+        body {
+            background-color: #282c34;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 10px;
+            margin: 20px auto;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            background-color: #34495e;
+            color: white;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell:hover {
+            background-color: #1abc9c;
+            transform: scale(1.1);
+        }
+
+        .winning-cell {
+            background-color: #f1c40f !important;
+            animation: flash 0.5s infinite alternate;
+        }
+
+        @keyframes flash {
+            0% {
+                background-color: #f1c40f;
+            }
+
+            100% {
+                background-color: #f39c12;
+            }
+        }
+
+        #restartButton,
+        #startButton {
+            background-color: #e74c3c;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px;
+        }
+
+        #restartButton:hover,
+        #startButton:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .dropdown {
+            display: inline-block;
+            position: relative;
+            margin: 10px;
+        }
+
+        .dropbtn {
+            background-color: #1abc9c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            border-radius: 5px;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1c40f;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-info {
+            margin-top: 20px;
+        }
+        #backBtn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #88c005;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #backBtn:hover {
+            background-color: #e9740e;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="backBtn" onclick="window.location.href='index.html';">Back</button>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+
+        <div class="dropdown mb-3">
+            <button class="dropbtn">Select Symbols</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="setSymbols('X', 'O')">X vs O</a>
+                <a href="#" onclick="setSymbols('⚽', '🏀')">⚽ vs 🏀</a>
+                <a href="#" onclick="setSymbols('🌟', '🌙')">🌟 vs 🌙</a>
+            </div>
+        </div>
+
+        <div class="dropdown mb-3">
+            <button class="dropbtn">Select Game Mode</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="setGameMode('friend')">Play with Friend</a>
+                <a href="#" onclick="setGameMode('computer')">Play with Computer</a>
+            </div>
+        </div>
+
+        <button id="startButton">Start Game</button>
+        <button id="restartButton">Restart Game</button>
+
+        <div class="game-board" style="display: none;">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <div class="game-info">
+            <h2 id="gameStatus">Player's turn</h2>
+        </div>
+    </div>
+
+    <script>
+        const cells = document.querySelectorAll('.cell');
+        const gameStatus = document.getElementById('gameStatus');
+        const restartButton = document.getElementById('restartButton');
+        const startButton = document.getElementById('startButton');
+        let currentPlayer = 'X';
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = false;
+        let gameMode = 'friend';
+        let playerSymbols = { X: 'X', O: 'O' };
+
+        const winningCombinations = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        // Set player symbols
+        function setSymbols(symbolX, symbolO) {
+            playerSymbols = { X: symbolX, O: symbolO };
+            gameStatus.innerHTML = `Symbols set: Player 1 - ${playerSymbols.X}, Player 2 - ${playerSymbols.O}`;
+        }
+
+        // Set game mode
+        function setGameMode(mode) {
+            gameMode = mode;
+            gameStatus.innerHTML = `Game mode set to: ${gameMode === 'friend' ? 'Play with Friend' : 'Play with Computer'}`;
+        }
+
+        // Start the game
+        const startGame = () => {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = true;
+            gameStatus.innerHTML = `Player ${playerSymbols.X}'s turn`;
+            document.querySelector('.game-board').style.display = 'grid';
+
+            cells.forEach(cell => {
+                cell.classList.remove('x', 'o', 'winning-cell');
+                cell.innerHTML = '';
+            });
+        };
+
+        // Handle cell click
+        const handleCellClick = (event) => {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (board[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            board[clickedCellIndex] = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase());
+            clickedCell.innerHTML = playerSymbols[currentPlayer];
+
+            checkWinner();
+
+            if (gameMode === 'computer' && gameActive) {
+                setTimeout(computerMove, 500); // AI moves after 500ms
+            }
+        };
+
+        // Computer's move
+        const computerMove = () => {
+            // Check for a winning move
+            for (let i = 0; i < winningCombinations.length; i++) {
+                const [a, b, c] = winningCombinations[i];
+                if (board[a] === board[b] && board[c] === '' && board[a] === 'O') {
+                    board[c] = 'O';
+                    cells[c].innerHTML = playerSymbols.O;
+                    cells[c].classList.add('o');
+                    checkWinner();
+                    return;
+                }
+                if (board[a] === board[c] && board[b] === '' && board[a] === 'O') {
+                    board[b] = 'O';
+                    cells[b].innerHTML = playerSymbols.O;
+                    cells[b].classList.add('o');
+                    checkWinner();
+                    return;
+                }
+                if (board[b] === board[c] && board[a] === '' && board[b] === 'O') {
+                    board[a] = 'O';
+                    cells[a].innerHTML = playerSymbols.O;
+                    cells[a].classList.add('o');
+                    checkWinner();
+                    return;
+                }
+            }
+
+            // Random move if no winning move
+            let randomCell;
+            do {
+                randomCell = Math.floor(Math.random() * 9);
+            } while (board[randomCell] !== '');
+
+            board[randomCell] = 'O';
+            cells[randomCell].innerHTML = playerSymbols.O;
+            cells[randomCell].classList.add('o');
+            checkWinner();
+        };
+
+        // Check for a winner
+        const checkWinner = () => {
+            let roundWon = false;
+
+            for (let i = 0; i < winningCombinations.length; i++) {
+                const [a, b, c] = winningCombinations[i];
+                if (board[a] === '' || board[b] === '' || board[c] === '') {
+                    continue;
+                }
+                if (board[a] === board[b] && board[a] === board[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                gameStatus.innerHTML = `Player ${playerSymbols[currentPlayer]} wins!`;
+                gameActive = false;
+                winningCombinations.forEach(combination => {
+                    const [a, b, c] = combination;
+                    if (board[a] === currentPlayer && board[b] === currentPlayer && board[c] === currentPlayer) {
+                        cells[a].classList.add('winning-cell');
+                        cells[b].classList.add('winning-cell');
+                        cells[c].classList.add('winning-cell');
+                    }
+                });
+                return;
+            }
+
+            if (!board.includes('')) {
+                gameStatus.innerHTML = "It's a draw!";
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            gameStatus.innerHTML = `Player ${playerSymbols[currentPlayer]}'s turn`;
+        };
+
+        // Event listeners
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        restartButton.addEventListener('click', startGame);
+        startButton.addEventListener('click', startGame);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #282c34;
+            color: #61dafb;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        
+        h1 {
+            margin-top: 20px;
+            color: #61dafb;
+        }
+
+        #instructions {
+            margin: 20px;
+            font-size: 18px;
+            color: #61dafb;
+            text-align: center;
+        }
+
+        #sudoku-container {
+            display: inline-block;
+            margin: 20px;
+            border: 2px solid #61dafb;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #333;
+        }
+        
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        td {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #aaa;
+            text-align: center;
+        }
+
+        /* Distinguish the 3x3 subgrids */
+        tr:nth-child(3n) td {
+            border-bottom: 2px solid #61dafb;
+        }
+        td:nth-child(3n) {
+            border-right: 2px solid #61dafb;
+        }
+
+        input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: 24px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            background-color: #444; /* Dark background for input */
+            color: #61dafb; /* Text color */
+        }
+
+        input:focus {
+            outline: none;
+            background-color: #4fa3c7; /* Light blue on focus */
+        }
+        
+        input[readonly] {
+            background-color: #555; /* Grey background for readonly inputs */
+        }
+
+        #button-container {
+            display: flex; /* Align buttons horizontally */
+            gap: 10px; /* Space between buttons */
+            margin-top: 20px; /* Margin on top */
+        }
+
+        #check-button, #reset-button, #hint-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #61dafb;
+            color: #282c34;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #check-button:hover, #reset-button:hover, #hint-button:hover {
+            background-color: #4fa3c7; /* Darker blue on hover */
+        }
+        
+        #message, #hint-message {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #61dafb;
+            text-align: center;
+        }
+        #backBtn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #88c005;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #backBtn:hover {
+            background-color: #e9740e;
+        }
+    </style>
+</head>
+<body>
+    <button id="backBtn" onclick="window.location.href='index.html';">Back</button>
+    <h1>Sudoku Game</h1>
+    <div id="instructions">
+        <p>Fill in the empty cells with numbers from 1 to 9.</p>
+        <p>Press "Check Solution" to validate your input.</p>
+        <p>Need a hint? Click "Get Hint"!</p>
+    </div>
+    <div id="sudoku-container">
+        <table id="sudoku-grid"></table>
+    </div>
+    <div id="button-container">
+        <button id="check-button">Check Solution</button>
+        <button id="reset-button">Reset</button>
+        <button id="hint-button">Get Hint</button>
+    </div>
+    <div id="message"></div>
+    <div id="hint-message"></div>
+
+    <script>
+        // Sudoku grid initialization and other game functions here.
+        // For brevity, game logic is not included.
+        const sudokuGrid = [
+            [5, 3, 0, 0, 7, 0, 0, 0, 0],
+            [6, 0, 0, 1, 9, 5, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 6, 0],
+            [8, 0, 0, 0, 6, 0, 0, 0, 3],
+            [4, 0, 0, 8, 0, 3, 0, 0, 1],
+            [7, 0, 0, 0, 2, 0, 0, 0, 6],
+            [0, 6, 0, 0, 0, 0, 2, 8, 0],
+            [0, 0, 0, 4, 1, 9, 0, 0, 5],
+            [0, 0, 0, 0, 8, 0, 0, 7, 9],
+        ];
+
+        function createSudokuGrid() {
+            const gridElement = document.getElementById('sudoku-grid');
+            for (let row = 0; row < 9; row++) {
+                const tr = document.createElement('tr');
+                for (let col = 0; col < 9; col++) {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = 1;
+                    input.max = 9;
+                    input.value = sudokuGrid[row][col] !== 0 ? sudokuGrid[row][col] : '';
+                    input.readOnly = sudokuGrid[row][col] !== 0; // Make cells with pre-filled numbers read-only
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+                gridElement.appendChild(tr);
+            }
+        }
+
+        function isValidNumber(num, row, col) {
+            for (let i = 0; i < 9; i++) {
+                // Check row
+                if (sudokuGrid[row][i] === num) return false;
+                // Check column
+                if (sudokuGrid[i][col] === num) return false;
+            }
+
+            // Check 3x3 subgrid
+            const subgridRow = Math.floor(row / 3) * 3;
+            const subgridCol = Math.floor(col / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (sudokuGrid[subgridRow + i][subgridCol + j] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function checkSudokuSolution() {
+            const inputs = document.querySelectorAll('input');
+            let valid = true;
+            inputs.forEach((input, index) => {
+                const value = parseInt(input.value);
+                if (value && !isValidNumber(value, Math.floor(index / 9), index % 9)) {
+                    valid = false;
+                }
+            });
+
+            const message = document.getElementById('message');
+            message.textContent = valid ? 'Congratulations! Your solution is correct!' : 'There are errors in your solution. Please try again.';
+        }
+
+        function resetSudokuGrid() {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach((input, index) => {
+                input.value = '';
+                input.removeAttribute('readonly'); // Make all inputs editable
+            });
+            document.getElementById('message').textContent = '';
+            document.getElementById('hint-message').textContent = '';
+        }
+
+        function getHint() {
+            const inputs = document.querySelectorAll('input');
+            let emptyCells = [];
+            inputs.forEach((input, index) => {
+                if (!input.value) {
+                    emptyCells.push(index);
+                }
+            });
+
+            if (emptyCells.length > 0) {
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const row = Math.floor(randomCell / 9);
+                const col = randomCell % 9;
+                const hintValue = sudokuGrid[row][col];
+                inputs[randomCell].value = hintValue; // Fill in the hint
+                document.getElementById('hint-message').textContent = `Hint: Cell [${row + 1}, ${col + 1}] = ${hintValue}`;
+            } else {
+                document.getElementById('hint-message').textContent = 'No empty cells available for hints.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createSudokuGrid();
+            document.getElementById('check-button').addEventListener('click', checkSudokuSolution);
+            document.getElementById('reset-button').addEventListener('click', resetSudokuGrid);
+            document.getElementById('hint-button').addEventListener('click', getHint);
+        });
+    </script>
+</body>
+</html>
